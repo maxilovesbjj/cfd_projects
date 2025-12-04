@@ -1,0 +1,209 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  Field          | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   Operation      | Version:  11                                    |
+|   \\  /    And            |                                                 |
+|    \\/     Manipulation   |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+
+application     foamRun;
+solver          incompressibleFluid;
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         1000;
+
+deltaT          1;
+
+writeControl    timeStep;
+writeInterval   100;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+writePrecision  7;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable yes;
+
+functions
+{
+    // =================================================================
+    // 1) MONITORES PARA CALCULO DE K (Método 2 Puntos)
+    //    Basado en L_in=7m (20D), D=0.35m, R=0.525m
+    // =================================================================
+
+    // P1: 2D ANTES del codo
+    monitor_P1
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        
+        // --- PARÁMETRO QUE FALTABA PARA v11 ---
+        writeFields     false;  
+        
+        writeControl    timeStep;
+        writeInterval   1;
+        log             true;
+        operation       areaAverage;
+        fields          (p U);
+        regionType      sampledSurface;
+        name            P1_inlet_2D;
+        sampledSurfaceDict
+        {
+            type        cuttingPlane;
+            planeType   pointAndNormal;
+            pointAndNormalDict
+            {
+                point   (0 6.3 0);
+                normal  (0 1 0);
+            }
+            interpolate true;
+        }
+    }
+
+    // P2: 10D DESPUÉS del codo
+    monitor_P2
+    {
+        type            surfaceFieldValue;
+        libs            ("libfieldFunctionObjects.so");
+        
+        // --- PARÁMETRO QUE FALTABA PARA v11 ---
+        writeFields     false;
+
+        writeControl    timeStep;
+        writeInterval   1;
+        log             true;
+        operation       areaAverage;
+        fields          (p U);
+        regionType      sampledSurface;
+        name            P2_outlet_10D;
+        sampledSurfaceDict
+        {
+            type        cuttingPlane;
+            planeType   pointAndNormal;
+            pointAndNormalDict
+            {
+                point   (4.025 7.525 0);
+                normal  (1 0 0);
+            }
+            interpolate true;
+        }
+    }
+
+    // =================================================================
+    // 2) MONITORES ESTÁNDAR
+    // =================================================================
+
+    #includeFunc residuals
+
+    #includeFunc patchFlowRate(patch=inlet)
+    #includeFunc patchFlowRate(patch=outlet)
+
+    #includeFunc patchAverage(patch=inlet,  fields=(p))
+    #includeFunc patchAverage(patch=outlet, fields=(p))
+
+    yPlus
+    {
+        type            yPlus;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    writeTime;
+    }
+
+    wallShear
+    {
+        type            wallShearStress;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    writeTime;
+    }
+
+    // =================================================================
+    // 3) PROBES (SONDAS PUNTUALES)
+    // =================================================================
+    centerProbes
+    {
+        type            probes;
+        libs            ("libsampling.so");
+        fields          (p U);
+        probeLocations
+        (
+            // Rama Entrada (Vertical)
+            (0   1   0)
+            (0   3   0)
+            (0   6   0)
+            (0   7   0)
+            // Rama Salida (Horizontal) - Ajustado a Y = 7.525
+            (1.0   7.525 0)
+            (2.0   7.525 0)
+            (4.0   7.525 0)
+        );
+        writeControl    timeStep;
+        writeInterval   10;
+    }
+
+    // =================================================================
+    // 4) LÍNEAS DE PERFIL (SAMPLING)
+    // =================================================================
+    profiles
+    {
+        type            sets;
+        libs            ("libsampling.so");
+        interpolationScheme cellPoint;
+        setFormat       csv;
+        fields          (p U);
+
+        sets
+        (
+            // Eje central Entrada
+            axisInlet
+            {
+                type    lineUniform;
+                axis    y;
+                start   (0 0 0);
+                end     (0 7 0);
+                nPoints 150;
+            }
+
+            // Eje central Salida (Corregido en altura)
+            axisOutlet
+            {
+                type    lineUniform;
+                axis    x;
+                // Empieza justo después del giro: X=R, Y=Lin+R
+                start   (0.525 7.525 0); 
+                end     (7.0   7.525 0);
+                nPoints 150;
+            }
+
+            // Perfil Radial en la salida (Vertical)
+            radialOutlet
+            {
+                type    lineUniform;
+                axis    y;
+                // Centrado en X=7, Y=7.525
+                start   (7 7.525 0);
+                // Hasta la pared superior (Radio = 0.175) -> 7.525 + 0.175 = 7.7
+                end     (7 7.700 0); 
+                nPoints 100;
+            }
+        );
+        writeControl    timeStep;
+        writeInterval   50;
+    }
+}
+
+// ************************************************************************* //
