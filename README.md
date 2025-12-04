@@ -9,7 +9,7 @@ The analysis was performed using the **OpenFOAM** platform and the RANS **$k-\om
 ### Key Simulation Parameters:
 * **Solver Platform:** **OpenFOAM (simpleFoam)**
 * **Turbulence Model:** **$k-\omega\ SST$**
-* **Target Reynolds Number (Re):** **$6.3 \times 10^5$**
+* **Target Reynolds Number ($Re$):** **$6.3 \times 10^5$**
 * **Selected Base Case:** `elbow90_18D_medium` (Chosen for numerical stability and grid independence)
 
 ---
@@ -83,15 +83,23 @@ CFD_90DegreeElbow_Analysis/
 ├── python_scripts/         # Post-processing and analysis code (compare_k_hgl.py)
 ├── documentation/          # Formal report (Report.pdf)
 ├── images/                 # Final, high-resolution visualization outputs (.png)
+├── MeshGeneration.md       # Mesh generation documentation
 ├── README.md               # Project overview and key results (this file)
 ├── requirements.txt        # Python dependencies for post-processing
 └── .gitignore              # Ensures large result files are excluded
+```
 
 ## 5. Technical Report
 
-A comprehensive technical report detailing the theoretical background, setup, mesh sensitivity study, full validation process, and detailed discussion is available in PDF format.
+For a comprehensive analysis including theoretical background, governing equations, and a detailed discussion of the mesh sensitivity study, please refer to the formal technical report included in this repository.
 
-* [Report.pdf](documentation/Report.pdf)
+**Key contents of the report include:**
+* **Mathematical Formulation:** Overview of the RANS equations and the $k-\omega\ SST$ turbulence model.
+* **Grid Independence Verification:** Detailed metrics and slope comparisons for Coarse, Medium, and Fine meshes.
+* **Validation:** Comparison of simulated $K_{HGL}$ against theoretical correlations.
+* **Physical Analysis:** In-depth discussion of Dean Vortices and secondary flow effects.
+
+📄 **[View Full Technical Report (PDF)](documentation/Report.pdf)**
 
 ---
 *Developed by: Maximiliano Lyon* | *Contact: maxilyonr@gmail.com*
